@@ -59,7 +59,7 @@ function Player(pos) {
 }
 Player.prototype.type = "player";
 
-// Helper function to easily create an element of a type provided 
+// Helper function to easily create an element of a type provided
 // and assign it a class.
 function elt(name, className) {
   var elt = document.createElement(name);
@@ -150,11 +150,33 @@ DOMDisplay.prototype.scrollPlayerIntoView = function() {
     this.wrap.scrollTop = center.y + margin - height;
 };
 
+//checks obstacle relative to where the player is
+Level.prototype.obstacleAt = function(pos, size){
+    var xStart = Math.floor(pos.x);//where are x position? coordinate of x postion
+    var xEnd = Math.ceil(pos.x + size.x);//x ending point. highest value. useful bc we arent sure what object we are using to move. ceil does int value
+    var yStart = Math.floor(pos.y);//lowest value
+    var yEnd = (Math.ceil(pos.y + size.y));//ending val is the ceiling so the highest
+
+    if (xStart < 0 || xEnd > this.width || yStart < 0 || yEnd > this.height) //everything outside game level is a wall
+      return 'wall';
+
+      for (var y = yStart; y < yEnd; y++){
+        for (var x = xStart; x <xEnd; x++){
+            var fieldType = this.grid[y][x];//y comes first bc we check which row then check
+            if(fieldType){
+              return fieldType;
+            }
+
+        }
+      }
+
+};
+
 
 // Update simulation each step based on keys & step size
 Level.prototype.animate = function(step, keys) {
 
-  // Ensure each is maximum 100 milliseconds 
+  // Ensure each is maximum 100 milliseconds
   while (step > 0) {
     var thisStep = Math.min(step, maxStep);
       this.player.act(thisStep, this, keys);
@@ -175,6 +197,10 @@ Player.prototype.moveX = function(step, level, keys) {
 
   var motion = new Vector(this.speed.x * step, 0);
   var newPos = this.pos.plus(motion);
+  //
+  var obstacle = level.obstacleAt(newPos, this.size);
+  if (obstacle != "wall")
+  //
   this.pos = newPos;
 };
 
@@ -183,15 +209,26 @@ var jumpSpeed = 17;
 var playerYSpeed = 7;
 
 Player.prototype.moveY = function(step, level, keys) {
-  this.speed.y = 0;
-  if (keys.up) this.speed.y -= playerYSpeed;
-  if (keys.down) this.speed.y += playerYSpeed;
-  var motion = new Vector(0, this.speed.y * step);
-  var newPos = this.pos.plus(motion);
+  this.speed.y += step * gravity;//instead of 0 we want to constantly have gravity
+  var motion = new Vector(0, this.speed.y * step); //still need motion
+  var newPos = this.pos.plus(motion);//still need position
+  //now check for falling until hits wall or ground
+  var obstacle = level.obstacleAt(newPos, this.size);  //check for obstacle
 
-  this.pos = newPos;
-
+  if (obstacle){
+    if (keys.up && this.speed.y >0)// th seconf part makes it so you cant double jump
+    // this.speed.y -= playerYSpeed;
+    this.speed.y = -jumpSpeed; // set player to negative jump speed.
+  //  if (keys.down) this.speed.y += playerYSpeed;  no need for down key bc gravity
+    else  // else if?
+      this.speed.y = 0; //we dont want them to fall through the ground.
+    } else {
+      this.pos = newPos;
+    }
 };
+
+
+
 
 Player.prototype.act = function(step, level, keys) {
   this.moveX(step, level, keys);
@@ -206,9 +243,9 @@ var arrowCodes = {37: "left", 38: "up", 39: "right", 40: "down"};
 function trackKeys(codes) {
   var pressed = Object.create(null);
 
-  // alters the current "pressed" array which is returned from this function. 
+  // alters the current "pressed" array which is returned from this function.
   // The "pressed" variable persists even after this function terminates
-  // That is why we needed to assign it using "Object.create()" as 
+  // That is why we needed to assign it using "Object.create()" as
   // otherwise it would be garbage collected
 
   function handler(event) {
@@ -216,7 +253,7 @@ function trackKeys(codes) {
       // If the event is keydown, set down to true. Else set to false.
       var down = event.type == "keydown";
       pressed[codes[event.keyCode]] = down;
-      // We don't want the key press to scroll the browser window, 
+      // We don't want the key press to scroll the browser window,
       // This stops the event from continuing to be processed
       event.preventDefault();
     }
