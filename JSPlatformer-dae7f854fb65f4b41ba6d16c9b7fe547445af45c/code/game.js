@@ -17,11 +17,13 @@ function Level(plan) {
       // Get the type from that character in the string. It can be 'x', '!' or ' '
       // If the character is ' ', assign null.
 
+
       var ch = line[x], fieldType = null;
       // Use if and else to handle the three cases
       if (ch==='@')
         // Create a new player at that grid position.
         this.player = new Player(new Vector(x, y));
+
       else if (ch == "x")
         fieldType = "wall";
       // Because there is a third case (space ' '), use an "else if" instead of "else"
@@ -55,11 +57,14 @@ Vector.prototype.times = function(factor) {
 
 // A Player has a size, speed and position.
 function Player(pos) {
+
   this.pos = pos.plus(new Vector(0, -0.5));
-  this.size = new Vector(0.8, 1.5);
+  //this.size = new Vector(0.8, 1.5);
+  this.size = new Vector(1.0, 1.0);
   this.speed = new Vector(0, 0);
 }
 Player.prototype.type = "player";
+
 
 // Helper function to easily create an element of a type provided
 // and assign it a class.
@@ -110,8 +115,7 @@ DOMDisplay.prototype.drawPlayer = function() {
   var wrap = elt("div");
 
   var actor = this.level.player;
-  var rect = wrap.appendChild(elt("div",
-                                    "actor " + actor.type));
+  var rect = wrap.appendChild(elt("div", "actor " + actor.type));
   rect.style.width = actor.size.x * scale + "px";
   rect.style.height = actor.size.y * scale + "px";
   rect.style.left = actor.pos.x * scale + "px";
@@ -161,12 +165,16 @@ Level.prototype.obstacleAt = function(pos, size){
 
     if (xStart < 0 || xEnd > this.width || yStart < 0 || yEnd > this.height) //everything outside game level is a wall
       return 'wall';
+      //if (yEnd > this.height)
+      //return "lava";
 
       for (var y = yStart; y < yEnd; y++){
-        for (var x = xStart; x <xEnd; x++){
+        for (var x = xStart; x < xEnd; x++){
             var fieldType = this.grid[y][x];//y comes first bc we check which row then check
             if(fieldType){
+            //  console.log(fieldType);
               return fieldType;
+
             }
 
         }
@@ -190,7 +198,7 @@ Level.prototype.animate = function(step, keys) {
 
 var maxStep = 0.05;
 
-var playerXSpeed = 7;
+var playerXSpeed = 8;
 
 Player.prototype.moveX = function(step, level, keys) {
   this.speed.x = 0;
@@ -202,13 +210,12 @@ Player.prototype.moveX = function(step, level, keys) {
   //
   var obstacle = level.obstacleAt(newPos, this.size);
   if (obstacle != "wall")
-  //
   this.pos = newPos;
 };
 
-var gravity = 30;
-var jumpSpeed = 17;
-var playerYSpeed = 7;
+var gravity = 65;
+var jumpSpeed = 25;
+var playerYSpeed = 10;
 
 Player.prototype.moveY = function(step, level, keys) {
   this.speed.y += step * gravity;//instead of 0 we want to constantly have gravity
@@ -217,7 +224,15 @@ Player.prototype.moveY = function(step, level, keys) {
   //now check for falling until hits wall or ground
   var obstacle = level.obstacleAt(newPos, this.size);  //check for obstacle
 
+  //var hitslava = level.obstacleAt(newPos, this.size);  //check for obstacle
+
   if (obstacle){
+    /////////////
+
+    if (obstacle == "lava")
+      this.pos = new Vector(8, 10);
+
+    ////////////
     if (keys.up && this.speed.y >0)// th seconf part makes it so you cant double jump
     // this.speed.y -= playerYSpeed;
     this.speed.y = -jumpSpeed; // set player to negative jump speed.
@@ -226,7 +241,9 @@ Player.prototype.moveY = function(step, level, keys) {
       this.speed.y = 0; //we dont want them to fall through the ground.
     } else {
       this.pos = newPos;
+
     }
+
 };
 
 
@@ -236,6 +253,7 @@ Player.prototype.act = function(step, level, keys) {
   this.moveX(step, level, keys);
   this.moveY(step, level, keys);
 };
+
 
 
 // Arrow key codes for readibility
